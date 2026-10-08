@@ -1,3 +1,54 @@
-resource "aws_efs_file_system" "this" { encrypted = true throughput_mode = "bursting" tags = merge(var.tags, { Name = "${var.name}-state" }) }
-resource "aws_efs_mount_target" "this" { for_each = toset(var.subnet_ids) file_system_id = aws_efs_file_system.this.id subnet_id = each.key security_groups = [var.efs_security_group_id] }
-resource "aws_efs_access_point" "this" { for_each = var.stateful_services file_system_id = aws_efs_file_system.this.id root_directory { path = "/${each.key}" creation_info { owner_gid = 0 owner_uid = 0 permissions = "0755" } } posix_user { gid = 0 uid = 0 } tags = merge(var.tags, { Name = "${var.name}-${each.key}" }) }
+resource "aws_efs_file_system" "this" {
+  encrypted = true
+
+  throughput_mode = "bursting"
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.name}-state"
+    }
+  )
+}
+
+
+resource "aws_efs_mount_target" "this" {
+  for_each = toset(var.subnet_ids)
+
+  file_system_id = aws_efs_file_system.this.id
+
+  subnet_id = each.key
+
+  security_groups = [
+    var.efs_security_group_id
+  ]
+}
+
+
+resource "aws_efs_access_point" "this" {
+  for_each = var.stateful_services
+
+  file_system_id = aws_efs_file_system.this.id
+
+  root_directory {
+    path = "/${each.key}"
+
+    creation_info {
+      owner_gid   = 0
+      owner_uid   = 0
+      permissions = "0755"
+    }
+  }
+
+  posix_user {
+    gid = 0
+    uid = 0
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.name}-${each.key}"
+    }
+  )
+}
